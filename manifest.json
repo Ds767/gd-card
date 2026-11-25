@@ -1,0 +1,10 @@
+{
+  "id": "gd-card",
+  "name": "GDCard",
+  "version": "0.3.0",
+  "minAppVersion": "1.4.0",
+  "description": "游戏设计卡片：在一页里管理武器/道具的属性、游戏性、平衡与开发状态，支持 [[双链]] 与卡片库。",
+  "author": "GDCard",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
