@@ -6,3 +6,4 @@ test/*.html
 test/*.png
 data.json
 .DS_Store
+/dist
