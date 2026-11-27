@@ -1,13 +1,14 @@
-import * as yaml from "js-yaml";
+import { parse, stringify } from "yaml";
 
-/** 测试用桩：Obsidian 内部用的也是 js-yaml，行为足够接近 */
+/** 测试用桩：Obsidian 的 parseYaml / stringifyYaml 也是 YAML，行为足够接近 */
 
 export function parseYaml(src: string) {
-  return (yaml as any).load(src);
+  return parse(src);
 }
 
 export function stringifyYaml(v: unknown) {
-  return (yaml as any).dump(v, { lineWidth: -1, noRefs: true });
+  // lineWidth: 0 —— 关掉自动折行，写出来的格式更接近 Obsidian
+  return stringify(v, { lineWidth: 0 });
 }
 
 export function normalizePath(p: string): string {

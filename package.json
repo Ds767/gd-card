@@ -1,25 +1,25 @@
 {
   "name": "gd-card",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "GDCard — Obsidian 游戏设计卡片插件",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "test": "npm run test:core && npm run test:batch",
-    "preview": "esbuild test/preview.ts --bundle --format=esm --platform=node --outfile=test/preview.mjs --alias:obsidian=./test/obsidian-stub.ts --log-level=error && node test/preview.mjs",
-    "test:core": "esbuild test/run.ts --bundle --format=esm --platform=node --outfile=test/run.mjs --alias:obsidian=./test/obsidian-stub.ts --log-level=error && node test/run.mjs",
-    "test:batch": "esbuild test/batch.ts --bundle --format=esm --platform=node --outfile=test/batch.mjs --alias:obsidian=./test/obsidian-stub.ts --log-level=error && node test/batch.mjs"
+    "preview": "esbuild test/preview.ts --bundle --format=esm --platform=node --external:yaml --outfile=test/preview.mjs --alias:obsidian=./test/obsidian-stub.ts --log-level=error && node test/preview.mjs",
+    "test:core": "esbuild test/run.ts --bundle --format=esm --platform=node --external:yaml --outfile=test/run.mjs --alias:obsidian=./test/obsidian-stub.ts --log-level=error && node test/run.mjs",
+    "test:batch": "esbuild test/batch.ts --bundle --format=esm --platform=node --external:yaml --outfile=test/batch.mjs --alias:obsidian=./test/obsidian-stub.ts --log-level=error && node test/batch.mjs"
   },
   "keywords": [
     "obsidian",
     "game-design"
   ],
-  "license": "MIT",
+  "license": "MPL-2.0 license",
   "devDependencies": {
     "esbuild": "^0.28.0",
-    "js-yaml": "^5.5.0",
-    "obsidian": "^1.7.2",
-    "typescript": "^5.6.0"
+    "obsidian": "^1.14.4",
+    "typescript": "^5.6.0",
+    "yaml": "^2.9.1"
   }
 }

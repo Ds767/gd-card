@@ -11,6 +11,7 @@ import {
   TFile,
   normalizePath,
 } from "obsidian";
+import type { SettingDefinitionItem } from "obsidian";
 
 import {
   CardData,
@@ -18,7 +19,6 @@ import {
   GDSettings,
   STATUS_LABEL,
   STATUS_ORDER,
-  Status,
   emptyCard,
   joinList,
   parseCard,
@@ -26,6 +26,7 @@ import {
   splitList,
 } from "./data";
 import { cardHTML, refreshWeak, richHTML } from "./card";
+import { mountHTML } from "./dom";
 import { extractCardBlock, replaceCardBlock } from "./block";
 import { LibraryModal } from "./library";
 import { BatchRenameModal } from "./batchRename";
@@ -80,7 +81,7 @@ class CardBlock extends MarkdownRenderChild {
   /* ---------------- 渲染 ---------------- */
 
   private render(): void {
-    this.cardEl.innerHTML = cardHTML(this.data, this.plugin.settings, true);
+    mountHTML(this.cardEl, cardHTML(this.data, this.plugin.settings, true));
     refreshWeak(this.cardEl);
   }
 
@@ -163,7 +164,7 @@ class CardBlock extends MarkdownRenderChild {
       const raw = (el.innerText || "").replace(/[ \t]+\n/g, "\n").trim();
       this.data.synergy = raw;
       el.removeAttribute("contenteditable");
-      el.innerHTML = raw ? richHTML(raw) : "";
+      mountHTML(el, raw ? richHTML(raw) : "");
       el.dataset.linkedit = "1";
       this.dirty = true;
       refreshWeak(this.cardEl);
@@ -171,7 +172,7 @@ class CardBlock extends MarkdownRenderChild {
       return;
     }
 
-    if (!(el.textContent || "").trim()) el.innerHTML = "";
+    if (!(el.textContent || "").trim()) el.empty();
   }
 
   /* ---------------- 点击 ---------------- */
@@ -285,7 +286,7 @@ class CardBlock extends MarkdownRenderChild {
         .setTitle(STATUS_LABEL[s])
         .setChecked(this.data.status === s)
         .onClick(() => {
-          this.data.status = s as Status;
+          this.data.status = s;
           this.commit();
         }));
     }
@@ -339,18 +340,28 @@ export default class GDCardPlugin extends Plugin {
   /* ---------------- 设置 ---------------- */
 
   async loadSettings(): Promise<void> {
-    const saved = (await this.loadData()) || {};
+    const raw: unknown = await this.loadData();
+    const saved = (raw && typeof raw === "object" ? raw : {}) as Partial<GDSettings>;
+
+    const text = (v: unknown, fallback: string): string =>
+      typeof v === "string" && v.trim() ? v : fallback;
+    /** 列表项只收字符串；keepEmpty 为 false 时，空列表回落到默认值 */
+    const list = (v: unknown, fallback: string[], keepEmpty: boolean): string[] => {
+      if (!Array.isArray(v)) return [...fallback];
+      const arr: unknown[] = v;
+      const out = arr.filter((x): x is string => typeof x === "string");
+      return !out.length && !keepEmpty ? [...fallback] : out;
+    };
+
     this.settings = {
-      ...DEFAULT_SETTINGS,
-      ...saved,
-      requiredAttrs: Array.isArray(saved.requiredAttrs) && saved.requiredAttrs.length
-        ? saved.requiredAttrs : [...DEFAULT_SETTINGS.requiredAttrs],
-      optionalAttrs: Array.isArray(saved.optionalAttrs)
-        ? saved.optionalAttrs : [...DEFAULT_SETTINGS.optionalAttrs],
-      balanceFixed: Array.isArray(saved.balanceFixed) && saved.balanceFixed.length
-        ? saved.balanceFixed : [...DEFAULT_SETTINGS.balanceFixed],
-      balancePool: Array.isArray(saved.balancePool)
-        ? saved.balancePool : [...DEFAULT_SETTINGS.balancePool],
+      defaultOwner: text(saved.defaultOwner, DEFAULT_SETTINGS.defaultOwner),
+      cardFolder: text(saved.cardFolder, DEFAULT_SETTINGS.cardFolder),
+      defaultCategory: text(saved.defaultCategory, DEFAULT_SETTINGS.defaultCategory),
+      librarySort: text(saved.librarySort, DEFAULT_SETTINGS.librarySort),
+      requiredAttrs: list(saved.requiredAttrs, DEFAULT_SETTINGS.requiredAttrs, false),
+      optionalAttrs: list(saved.optionalAttrs, DEFAULT_SETTINGS.optionalAttrs, true),
+      balanceFixed: list(saved.balanceFixed, DEFAULT_SETTINGS.balanceFixed, false),
+      balancePool: list(saved.balancePool, DEFAULT_SETTINGS.balancePool, true),
     };
   }
 
@@ -379,7 +390,7 @@ export default class GDCardPlugin extends Plugin {
     let file: TFile;
     try {
       file = await this.app.vault.create(path, content);
-    } catch (e) {
+    } catch {
       new Notice("GDCard：创建失败，可能已存在同名文件（" + title + "）");
       return;
     }
@@ -449,95 +460,151 @@ export default class GDCardPlugin extends Plugin {
 /* ============================================================
    设置页
    ============================================================ */
+
+type SettingKey =
+  | "defaultOwner"
+  | "cardFolder"
+  | "defaultCategory"
+  | "requiredAttrs"
+  | "optionalAttrs"
+  | "balanceFixed"
+  | "balancePool";
+
+/** 设置项清单：声明式 API 和旧版 display() 共用，避免两处文案写岔 */
+const SETTING_ROWS: Array<{
+  group: string;
+  key: SettingKey;
+  name: string;
+  desc: string;
+  placeholder?: string;
+}> = [
+  {
+    group: "卡片", key: "defaultOwner", name: "默认负责人",
+    desc: "新建卡片时，右下角 @ 后面填的名字；之后也可以在卡片上直接改。",
+    placeholder: "user",
+  },
+  {
+    group: "卡片", key: "cardFolder", name: "卡片存放目录",
+    desc: "新建卡片会放在这个目录下，卡片库也只扫这里。",
+    placeholder: "卡片",
+  },
+  {
+    group: "卡片", key: "defaultCategory", name: "默认分类",
+    desc: "卡片右上角的分类文字，例如「武器/投射物」。",
+  },
+  {
+    group: "字段", key: "requiredAttrs", name: "必有属性",
+    desc: "固定显示、不可删除的属性名，逗号分隔。",
+  },
+  {
+    group: "字段", key: "optionalAttrs", name: "可选属性池",
+    desc: "点属性区 ＋ 时列出来的候选，逗号分隔。",
+  },
+  {
+    group: "字段", key: "balanceFixed", name: "平衡必有指标",
+    desc: "固定显示、不可删除的指标名，逗号分隔。",
+  },
+  {
+    group: "字段", key: "balancePool", name: "平衡指标池",
+    desc: "点平衡区 ＋ 时列出来的候选，逗号分隔。",
+  },
+];
+
 class GDCardSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: GDCardPlugin) {
     super(app, plugin);
   }
 
+  /* ---- 声明式设置（1.13.0+ 的设置搜索靠它） ---- */
+
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    const group = (heading: string): SettingDefinitionItem => ({
+      type: "group",
+      heading,
+      items: SETTING_ROWS.filter(r => r.group === heading).map(row => ({
+        name: row.name,
+        desc: row.desc,
+        control: { type: "text", key: row.key, placeholder: row.placeholder },
+      })),
+    });
+    return [group("卡片"), group("字段")];
+  }
+
+  /* ---- 读写：两个入口共用同一套规范化逻辑 ---- */
+
+  private valueText(key: SettingKey): string {
+    const s = this.plugin.settings;
+    switch (key) {
+      case "defaultOwner": return s.defaultOwner;
+      case "cardFolder": return s.cardFolder;
+      case "defaultCategory": return s.defaultCategory;
+      case "requiredAttrs": return joinList(s.requiredAttrs);
+      case "optionalAttrs": return joinList(s.optionalAttrs);
+      case "balanceFixed": return joinList(s.balanceFixed);
+      case "balancePool": return joinList(s.balancePool);
+    }
+  }
+
+  getControlValue(key: string): unknown {
+    return this.valueText(key as SettingKey);
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    const raw = typeof value === "string" ? value : "";
+    const trimmed = raw.trim();
+    const s = this.plugin.settings;
+    switch (key) {
+      case "defaultOwner":
+        s.defaultOwner = trimmed || DEFAULT_SETTINGS.defaultOwner;
+        break;
+      case "cardFolder":
+        s.cardFolder = trimmed || DEFAULT_SETTINGS.cardFolder;
+        break;
+      case "defaultCategory":
+        s.defaultCategory = trimmed;
+        break;
+      // 必有项不能清空，留空就保持原值
+      case "requiredAttrs": {
+        const l = splitList(raw);
+        if (l.length) s.requiredAttrs = l;
+        break;
+      }
+      case "optionalAttrs":
+        s.optionalAttrs = splitList(raw);
+        break;
+      case "balanceFixed": {
+        const l = splitList(raw);
+        if (l.length) s.balanceFixed = l;
+        break;
+      }
+      case "balancePool":
+        s.balancePool = splitList(raw);
+        break;
+      default:
+        break;
+    }
+    await this.plugin.saveSettings();
+  }
+
+  /* ---- 旧版本（< 1.13.0）的渲染入口 ---- */
+
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName("卡片").setHeading();
-
-    new Setting(containerEl)
-      .setName("默认负责人")
-      .setDesc("新建卡片时，右下角 @ 后面填的名字；之后也可以在卡片上直接改。")
-      .addText(t => t
-        .setPlaceholder("user")
-        .setValue(this.plugin.settings.defaultOwner)
-        .onChange(async v => {
-          this.plugin.settings.defaultOwner = v.trim() || "user";
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName("卡片存放目录")
-      .setDesc("新建卡片会放在这个目录下，卡片库也只扫这里。")
-      .addText(t => t
-        .setPlaceholder("卡片")
-        .setValue(this.plugin.settings.cardFolder)
-        .onChange(async v => {
-          this.plugin.settings.cardFolder = v.trim() || "卡片";
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName("默认分类")
-      .setDesc("卡片右上角的分类文字，例如「武器/投射物」。")
-      .addText(t => t
-        .setValue(this.plugin.settings.defaultCategory)
-        .onChange(async v => {
-          this.plugin.settings.defaultCategory = v.trim();
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl).setName("字段").setHeading();
-
-    new Setting(containerEl)
-      .setName("必有属性")
-      .setDesc("固定显示、不可删除的属性名，逗号分隔。")
-      .addText(t => t
-        .setValue(joinList(this.plugin.settings.requiredAttrs))
-        .onChange(async v => {
-          const list = splitList(v);
-          if (list.length) {
-            this.plugin.settings.requiredAttrs = list;
-            await this.plugin.saveSettings();
-          }
-        }));
-
-    new Setting(containerEl)
-      .setName("可选属性池")
-      .setDesc("点属性区 ＋ 时列出来的候选，逗号分隔。")
-      .addText(t => t
-        .setValue(joinList(this.plugin.settings.optionalAttrs))
-        .onChange(async v => {
-          this.plugin.settings.optionalAttrs = splitList(v);
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName("平衡必有指标")
-      .setDesc("固定显示、不可删除的指标名，逗号分隔。")
-      .addText(t => t
-        .setValue(joinList(this.plugin.settings.balanceFixed))
-        .onChange(async v => {
-          const list = splitList(v);
-          if (list.length) {
-            this.plugin.settings.balanceFixed = list;
-            await this.plugin.saveSettings();
-          }
-        }));
-
-    new Setting(containerEl)
-      .setName("平衡指标池")
-      .setDesc("点平衡区 ＋ 时列出来的候选，逗号分隔。")
-      .addText(t => t
-        .setValue(joinList(this.plugin.settings.balancePool))
-        .onChange(async v => {
-          this.plugin.settings.balancePool = splitList(v);
-          await this.plugin.saveSettings();
-        }));
+    let heading = "";
+    for (const row of SETTING_ROWS) {
+      if (row.group !== heading) {
+        heading = row.group;
+        new Setting(containerEl).setName(heading).setHeading();
+      }
+      new Setting(containerEl)
+        .setName(row.name)
+        .setDesc(row.desc)
+        .addText(t => t
+          .setPlaceholder(row.placeholder ?? "")
+          .setValue(this.valueText(row.key))
+          .onChange(v => void this.setControlValue(row.key, v)));
+    }
   }
 }

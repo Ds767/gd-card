@@ -1,10 +1,180 @@
 # GDCard
 
+One note = one game-design card. GDCard gives weapons, items and characters a fixed
+layout — attributes, lore, VFX, gameplay role / counter / synergy, balance numbers,
+dev status — and makes every field editable in place. Empty sections fade but never
+collapse, so you can see at a glance what is still missing.
+
+Cards are plain Markdown with a fenced `gdcard` YAML block, so they stay readable,
+diffable and grep-able without the plugin.
+
+---
+
+## Features
+
+- **Card block** — a ```` ```gdcard ```` code block renders as a card in reading view.
+- **Edit in place** — click any field and type; changes are written back to the note.
+- **Attribute pools** — fixed attributes plus an optional pool you can add from with `＋`.
+- **Wikilinks inside cards** — `[[Card name]]` in the synergy section becomes a clickable link.
+- **Card library** — grid of all cards in your card folder, filter by status, sort by
+  modified / created / rarity / name / status.
+- **Batch rename** — rename card files from their card title, with a confirmation list.
+- **Configurable fields** — required attributes, optional pool, balance metrics and
+  default folder / owner / category live in the plugin settings.
+
+## Installation
+
+### Manual
+
+1. Copy the `gd-card` folder into `<your vault>/.obsidian/plugins/gd-card/`.
+2. Reload Obsidian.
+3. Settings → Community plugins → enable **GDCard**.
+
+The folder name must match the `id` in `manifest.json`.
+
+### From source
+
+```bash
+npm install
+npm run build     # outputs main.js
+```
+
+Then copy `main.js`, `manifest.json` and `styles.css` into
+`<your vault>/.obsidian/plugins/gd-card/`.
+
+## Usage
+
+**New card**: ribbon `＋` icon, or the command `GDCard: New weapon card`.
+A note named `未命名卡片.md` is created inside the card folder with the required
+attribute keys already in place; the title is a grey placeholder — just start typing.
+
+**File name and card ID are independent.** A new card is called "未命名卡片" and its
+ID stays empty; changing the ID does not rename the file.
+
+**Rename to match the title**: command `GDCard: Batch rename all cards by title`. It
+lists every `current → new` pair first, you tick the ones to apply, and Obsidian
+updates the `[[wikilinks]]` pointing at them. You can also rename by hand in the file
+explorer.
+
+**Editing**: almost every piece of text on the card can be edited in place.
+
+| Where | What you can change |
+| --- | --- |
+| Top-left `Weapon-001` | card ID — free-form, may stay empty, does not affect the file name |
+| Top-right `rare=1` | rarity value |
+| Title / `武器/投射物` | name (= file name once renamed) / category |
+| Attributes | required attributes: value only; `＋` adds one from the pool, hover to remove |
+| Lore / VFX / Note | multi-line text |
+| Role / Counter | multi-line text |
+| Synergy | plain paragraph; `[[Card name]]` is highlighted as a link — click the paragraph to edit raw text, click outside to restore highlights |
+| Balance | `期望DPS` and `强度` are fixed metrics; `＋` adds from the pool, removable |
+| Bottom-right | status dropdown (in progress / shipped / idea / dropped) and `@owner` |
+| Bottom-left | creation time, filled automatically, editable |
+
+**Card library**: ribbon library icon, or the command `GDCard: Open card library`.
+Shows every card in the card folder as a grid, filterable by status and sortable by
+last modified / created / rarity / name / status.
+
+## Settings
+
+Settings → Community plugins → GDCard:
+
+- **Default owner** — the name after `@` on new cards (default `user`)
+- **Card folder** — default `卡片`; the library only scans this folder
+- **Default category** — default `武器/投射物`
+- **Required attributes** — fixed, non-removable attribute names
+  (default `damage, attack_interval, projectile_speed, max_range`)
+- **Optional attribute pool** — candidates listed by `＋` in the attributes section
+- **Fixed balance metrics** — fixed, non-removable metrics (default `期望DPS, 强度`)
+- **Balance metric pool** — candidates listed by `＋` in the balance section
+
+Changing *required attributes* only affects cards created later; extra keys already
+stored in existing cards are kept and shown as optional attributes.
+
+Library sorting is not in the settings tab — pick it from the dropdown in the library
+header, it is remembered.
+
+## Data format
+
+A card is one note whose body is a `gdcard` code block containing YAML:
+
+````markdown
+```gdcard
+type: weapon
+id: Weapon-001
+name: 基本手枪
+cat: 武器/投射物
+rare: 1
+owner: user
+status: wip
+created: 2026-11-20 15:30
+attrs:
+  damage: 5
+  attack_interval: 2
+  projectile_speed: 5
+  max_range: 5
+optional:
+  pierce: 2
+lore: 战5渣
+vfx: 发射基础子弹，弹道直线
+gameplay:
+  role: |-
+    初始默认武器
+    教学使用
+  counter: ''
+  synergy: 和[[火焰附魔]]最搭
+  balance:
+    期望DPS: 2-3
+    强度: D
+note: 战五渣DPS没有5很合理
+```
+````
+
+You can edit the YAML directly — the card re-renders when you switch back to reading
+view. `sample/卡片/` contains five example cards you can copy into a vault.
+
+## Known limitations
+
+- **Reading view is recommended.** It also works in live preview, but the editor
+  occasionally steals focus; the card stops `mousedown` propagation, which covers
+  most cases.
+- **Save timing**: typing only changes memory; the note is written when focus leaves
+  the whole card. That is deliberate — re-rendering mid-typing would drop the caret.
+  Give Obsidian a moment (or click elsewhere) before force-quitting.
+- **Renaming is manual**: use the batch rename command, or rename in the file
+  explorer. Editing the card title does not rename the file.
+- **Batch rename scope**: only notes inside the card folder whose body contains a
+  ```` ```gdcard ```` block. Other notes are never touched.
+- **Changing the ID does not rename the file**; the two are independent.
+- **No Dataview / Bases support**: the data lives in a code block, not in frontmatter.
+
+## Development
+
+```bash
+npm install
+npm run dev      # watch src/, rebuild main.js
+npm test         # logic tests (YAML round-trip, HTML generation, block replacement)
+```
+
+Tests run on Node with an `obsidian` stub, so Obsidian does not need to be running.
+
+```
+src/data.ts         data model, parse / serialize, field ordering
+src/card.ts         card HTML generation
+src/dom.ts          HTML string -> DOM mounting helper
+src/block.ts        locate and replace the ```gdcard block
+src/main.ts         plugin entry, card interaction, settings tab, new card
+src/library.ts      card library modal
+src/prompt.ts       small modal for custom field names
+```
+
+---
+
+# 中文说明
+
 Obsidian 插件：用「一张卡片」管理游戏设计里的武器、道具、角色。
 
 一页笔记就是一张卡，字段固定、可点开就改；空着的栏目会变浅但不会消失，方便你一眼看出哪块还没填。
-
----
 
 ## 安装
 
@@ -24,10 +194,8 @@ npm install
 npm run build     # 产出 main.js
 ```
 
-然后把 `main.js`、`manifest.json`、`styles.css` 三个文件放进  
+然后把 `main.js`、`manifest.json`、`styles.css` 三个文件放进
 `<仓库>/.obsidian/plugins/gd-card/`。
-
----
 
 ## 用法
 
@@ -56,8 +224,6 @@ npm run build     # 产出 main.js
 
 **卡片库**：左侧功能区的卡片库图标，或命令面板 `GDCard: 打开卡片库`，会把卡片目录里的所有卡按网格铺开。可以按开发状态筛选，按「最近修改 / 创建时间 / 稀有度 / 名称 / 状态」排序。
 
----
-
 ## 设置
 
 设置 → 第三方插件 → GDCard：
@@ -76,8 +242,6 @@ npm run build     # 产出 main.js
 
 左侧功能区有两个按钮：**＋**（新建卡片）和 **▦**（卡片库）。
 
----
-
 ## 数据格式
 
 一张卡就是一篇笔记，正文是一个 `gdcard` 代码块，内容是 YAML：
@@ -95,7 +259,7 @@ created: 2026-11-20 15:30
 attrs:
   damage: 5
   attack_interval: 2
-  projectile gggggggg_speed: 5
+  projectile_speed: 5
   max_range: 5
 optional:
   pierce: 2
@@ -114,10 +278,8 @@ note: 战五渣DPS没有5很合理
 ```
 ````
 
-也可以直接在源码里手改，改完回到阅读视图就是新卡片。  
+也可以直接在源码里手改，改完回到阅读视图就是新卡片。
 `sample/卡片/` 里有 5 张示例卡，想先看看效果可以把这个文件夹复制进仓库。
-
----
 
 ## 已知限制
 
@@ -136,12 +298,13 @@ npm run dev      # 监听 src/ 变更，输出 main.js
 npm test         # 纯逻辑测试（YAML 往返、HTML 生成、代码块替换）
 ```
 
-`test/` 里的测试跑在 Node 上，用一个 `obsidian` 桩替换 `parseYaml` / `stringifyYaml`，  
+`test/` 里的测试跑在 Node 上，用一个 `obsidian` 桩替换 `parseYaml` / `stringifyYaml`，
 不需要启动 Obsidian。
 
 ````
 src/data.ts     数据结构、解析、序列化、字段顺序
 src/card.ts     卡片 HTML 生成
+src/dom.ts      HTML 字符串 → DOM 挂载（避开 innerHTML）
 src/block.ts    定位并替换 ```gdcard 代码块
 src/main.ts     插件入口、卡片交互、设置页、新建卡片
 src/library.ts  卡片库弹窗

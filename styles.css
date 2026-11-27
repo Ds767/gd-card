@@ -242,7 +242,6 @@
   padding: 0 3px;
   text-decoration: none;
   cursor: pointer;
-  box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 .gd-wiki:hover {
@@ -319,7 +318,7 @@
 .gd-st-done .gd-dot { background: var(--color-green, #3f9159); }
 .gd-st-idea .gd-dot { background: var(--color-purple, #8b6cf0); }
 .gd-st-dropped .gd-dot { background: var(--gd-faint); }
-.gd-st-dropped { text-decoration: line-through; text-decoration-color: var(--gd-faint); }
+.gd-st-dropped { text-decoration-line: line-through; }
 .gd-owner {
   font-family: var(--font-monospace);
   font-size: 12px;

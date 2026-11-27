@@ -2,6 +2,7 @@ import { App, Modal, TFile, normalizePath } from "obsidian";
 import type GDCardPlugin from "./main";
 import { CardData, STATUS_LABEL, STATUS_ORDER, Status, parseCard } from "./data";
 import { cardHTML, refreshWeak } from "./card";
+import { mountHTML } from "./dom";
 import { extractCardBlock } from "./block";
 
 const SORT_OPTIONS: Array<[string, string]> = [
@@ -132,7 +133,7 @@ export class LibraryModal extends Modal {
     for (const item of list) {
       const cell = this.gridEl.createDiv({ cls: "gd-lib-cell" });
       const card = cell.createDiv({ cls: "gdcard gd-static" });
-      card.innerHTML = cardHTML(item.data, this.plugin.settings, false);
+      mountHTML(card, cardHTML(item.data, this.plugin.settings, false));
       refreshWeak(card);
       cell.onclick = () => {
         void this.app.workspace.getLeaf(false).openFile(item.file);

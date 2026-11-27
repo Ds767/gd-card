@@ -210,7 +210,7 @@ export function emptyCard(s: GDSettings): CardData {
 /** 文件名清洗：去掉会破坏路径和 [[双链]] 的字符 */
 export function sanitizeFileName(name: string): string {
   return String(name || "")
-    .replace(/[\\/:*?"<>|#^\[\]]/g, " ")
+    .replace(/[\\/:*?"<>|#^[\]]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\.+$/, "")

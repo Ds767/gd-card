@@ -10,7 +10,7 @@ export function esc(s: unknown): string {
 
 /** 联动段落：普通正文，[[卡片名]] 高亮成内链 */
 export function richHTML(raw: string): string {
-  return esc(raw).replace(/\[\[([^\[\]]+)\]\]/g, (_m, label: string) =>
+  return esc(raw).replace(/\[\[([^[\]]+)\]\]/g, (_m, label: string) =>
     `<a class="gd-wiki" data-href="${label}">${label}</a>`);
 }
 

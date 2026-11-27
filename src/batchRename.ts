@@ -82,13 +82,17 @@ export class BatchRenameModal extends Modal {
     for (const it of toRename) this.selected.add(it.file.path);
 
     const summary = this.contentEl.createDiv({ cls: "gd-batch-summary" });
-    const parts = [
-      `扫到 <b>${this.items.length}</b> 张卡片`,
-      `<b>${toRename.length}</b> 张待改名`,
-      `<b>${this.items.filter(i => i.status === "conflict").length}</b> 张冲突`,
-      `<b>${this.items.filter(i => i.status === "skip").length}</b> 张跳过`,
-    ];
-    summary.innerHTML = parts.join(" · ");
+    const stat = (n: number, label: string): void => {
+      summary.createEl("b", { text: String(n) });
+      summary.appendText(" " + label);
+    };
+    stat(this.items.length, "张卡片");
+    summary.appendText(" · ");
+    stat(toRename.length, "张待改名");
+    summary.appendText(" · ");
+    stat(this.items.filter(i => i.status === "conflict").length, "张冲突");
+    summary.appendText(" · ");
+    stat(this.items.filter(i => i.status === "skip").length, "张跳过");
     if (!toRename.length) {
       summary.createDiv({ cls: "gd-batch-hint", text: "没有需要改名的卡片。" });
     }
