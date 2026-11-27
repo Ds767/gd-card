@@ -168,6 +168,12 @@ src/library.ts      card library modal
 src/prompt.ts       small modal for custom field names
 ```
 
+## License
+
+Mozilla Public License 2.0 (MPL-2.0) — see [LICENSE](LICENSE).
+Modifications to existing source files have to stay under the same license; the plugin
+can still be combined with code released under other licenses.
+
 ---
 
 # 中文说明
@@ -310,3 +316,10 @@ src/main.ts     插件入口、卡片交互、设置页、新建卡片
 src/library.ts  卡片库弹窗
 src/prompt.ts   自定义字段名的小弹窗
 ````
+
+## 许可证
+
+Mozilla 公共许可证 2.0（MPL-2.0），全文见 [LICENSE](LICENSE)。
+
+修改已有源文件后需要以同样的协议公开；可以和其它许可证的代码组合使用。
+

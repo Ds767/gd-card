@@ -133,9 +133,10 @@ export function cardHTML(d: CardData, s: GDSettings, editable: boolean): string 
         `<span class="gd-created-v"${ce} data-field="created"${ph("未记录")}>${esc(d.created)}</span></span>` +
       `<span class="gd-foot-right">` +
         (editable
-          ? `<button class="gd-status gd-st-${d.status}" data-act="status"><span class="gd-dot"></span>${statusLabel}` +
-            `<span class="gd-car">▾</span></button>`
-          : `<span class="gd-status gd-st-${d.status}"><span class="gd-dot"></span>${statusLabel}</span>`) +
+          ? `<button class="gd-status gd-st-${d.status}" data-act="status"><span class="gd-dot"></span>` +
+            `<span class="gd-st-label">${statusLabel}</span><span class="gd-car">▾</span></button>`
+          : `<span class="gd-status gd-st-${d.status}"><span class="gd-dot"></span>` +
+            `<span class="gd-st-label">${statusLabel}</span></span>`) +
         `<span class="gd-owner"${ce} data-field="owner">@${esc(d.owner)}</span>` +
       `</span>` +
     `</footer>`

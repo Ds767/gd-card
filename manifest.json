@@ -1,7 +1,7 @@
 {
   "id": "gd-card",
   "name": "GDCard",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "minAppVersion": "1.4.0",
   "description": "Game design cards: keep a weapon or item's attributes, gameplay, balance and dev status on one page, with wikilinks and a card library.",
   "author": "Ds767",

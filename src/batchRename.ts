@@ -19,6 +19,7 @@ export interface RenameItem {
  */
 export async function buildRenamePlan(app: App, settings: GDSettings): Promise<RenameItem[]> {
   const folder = normalizePath(settings.cardFolder || "卡片");
+  // 范围限制在卡片目录：先按路径前缀过滤，目录外的笔记一律不碰
   const inFolder = app.vault.getFiles().filter(f =>
     f.extension === "md" && (f.path === folder || f.path.startsWith(folder + "/")));
 

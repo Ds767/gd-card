@@ -242,7 +242,6 @@
   padding: 0 3px;
   text-decoration: none;
   cursor: pointer;
-  -webkit-box-decoration-break: clone;
 }
 .gd-wiki:hover {
   text-decoration: underline;
@@ -318,7 +317,18 @@
 .gd-st-done .gd-dot { background: var(--color-green, #3f9159); }
 .gd-st-idea .gd-dot { background: var(--color-purple, #8b6cf0); }
 .gd-st-dropped .gd-dot { background: var(--gd-faint); }
-.gd-st-dropped { text-decoration-line: line-through; }
+/* “废弃”的删除线用伪元素画：text-decoration 在旧版 Obsidian 上支持不完整 */
+.gd-st-dropped .gd-st-label { position: relative; }
+.gd-st-dropped .gd-st-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: var(--gd-faint);
+}
 .gd-owner {
   font-family: var(--font-monospace);
   font-size: 12px;

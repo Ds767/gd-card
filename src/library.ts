@@ -39,6 +39,7 @@ export class LibraryModal extends Modal {
 
   private async load(): Promise<void> {
     const folder = normalizePath(this.plugin.settings.cardFolder);
+    // 范围限制在卡片目录：先按路径前缀过滤，目录外的文件不读取
     for (const f of this.app.vault.getFiles()) {
       if (f.extension !== "md") continue;
       if (!(f.path === folder || f.path.startsWith(folder + "/"))) continue;
